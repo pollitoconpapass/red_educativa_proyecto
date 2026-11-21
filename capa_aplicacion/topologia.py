@@ -22,7 +22,8 @@ class EduNet(Topo):
             for host in sede["hosts"]:
                 nodo = self.addHost(
                     host["nombre"],
-                    ip=f"{host['ip']}/24",
+                    # /8: un solo dominio L2 entre sedes... con /24 solo se alcanzarian hosts de la misma sede
+                    ip=f"{host['ip']}/8",
                     mac=host["mac"],
                     defaultRoute=None,
                 )
@@ -40,9 +41,9 @@ def main():
     # NAT: los hosts necesitan salir para consultar MySQL en la VM de datos.
     nat = red.addNAT()
     nat.configDefault()
-    # addNAT() supone hosts en /8 y su gateway queda fuera de nuestras /24,
-    # asi que la ruta por defecto se agrega con "onlink" y el ARP del gateway
-    # es estatico (autoStaticArp corre en build(), antes de que exista nat0).
+    # addNAT() espera hosts en /8; con /24 el gateway quedaba fuera de subred,
+    # por eso la ruta se agrega con "onlink" y el ARP es estatico
+    # (autoStaticArp corre en build(), antes de que exista nat0).
     for host in red.hosts:
         if host is not nat:
             # Primero la ruta: arp -s necesita saber por que interfaz sale.
