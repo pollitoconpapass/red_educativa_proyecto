@@ -14,11 +14,11 @@ calculada desde `DOCUMENTO` y `PERMISO_ACCESO` de la BD `red_educativa`.
 
 | Switch | Sede        | Hosts                        |
 | ------ | ----------- | ---------------------------- |
-| s1     | Lima        | doc-carlos (1), est-luis (3) |
-| s2     | La Libertad | doc-ana (2), est-maria (4)   |
-| s3     | Junín       | est-pedro (5), invitado-1    |
-| s4     | Arequipa    | est-lucia (6), invitado-2    |
-| s5     | Loreto      | invitado-3, invitado-4       |
+| s1     | Lima        | doc_carlos (1), est_luis (3) |
+| s2     | La Libertad | doc_ana (2), est_maria (4)   |
+| s3     | Junín       | est_pedro (5), invitado_1    |
+| s4     | Arequipa    | est_lucia (6), invitado_2    |
+| s5     | Loreto      | invitado_3, invitado_4       |
 
 El detalle de IP/MAC/`id_usuario` está en `edunet/config.py`.
 
@@ -48,7 +48,9 @@ sudo apt install -y mininet python3-pip
 pip3 install -r requirements.txt
 ```
 
-`.env` (raíz del proyecto) debe apuntar a la BD de la capa de datos:
+`.env` debe apuntar a la BD de la capa de datos. El código lo busca desde
+`capa_aplicacion/config/` hacia arriba, así que funciona tanto en la raíz del
+proyecto como dentro de `capa_aplicacion/`:
 
 ```
 URL=jdbc:mysql://4.149.122.251:3306/red_educativa
@@ -57,7 +59,8 @@ PASSWORD=...
 ```
 
 También se aceptan las claves por separado (`SERVER_HOST`, `PORT`, `DATABASE`)
-y variables de entorno con esos mismos nombres.
+y variables de entorno con esos mismos nombres. Si falta alguna, el error indica
+qué claves faltan y qué `.env` se usó.
 
 La BD tiene que estar levantada antes de arrancar el controlador: si no responde,
 el controlador no arranca (no se deja la red sin política).
@@ -77,6 +80,15 @@ Y abrir el puerto 3306 **solo para la IP de la VM de aplicación** (regla de ent
 del NSG de Azure y, si está activo, `ufw`). El usuario `appuser@'%'` ya está en
 `capa_datos/creacion_permisos.sql`.
 
+La topología agrega un NAT Mininet (`red.addNAT()`) para que los hosts emulados
+tengan ruta por defecto y puedan consultar esa BD. Como las sedes usan `/24` y el
+gateway del NAT queda en `10.0.0.0/8`, la ruta se instala con `onlink`.
+El tráfico sale con la IP de la VM de aplicación, la misma que ya usa Ryu, así que
+no hay que cambiar nada más en la VM de datos.
+
+Verificación desde un host: `doc_carlos ip route` debe mostrar
+`default via 10.0.0.11 dev doc_carlos-eth0 ... onlink`.
+
 ## Arranque
 
 ```bash
@@ -87,25 +99,27 @@ ryu-manager sdn_controlador.py
 sudo python3 topologia.py
 ```
 
-Dentro de la CLI de Mininet, levantar el servidor de documentos de un autor:
+Dentro de la CLI de Mininet, levantar el servidor de documentos de un autor.
+Los hosts de Mininet usan el `python3` del sistema, **no** el de la `.venv`,
+así que hay que llamar al intérprete de la venv (ajusta la ruta si difiere):
 
 ```
-mininet> doc-carlos python3 servidor_documentos.py 1 &
-mininet> doc-ana python3 servidor_documentos.py 2 &
-mininet> est-luis python3 servidor_documentos.py 3 &
-mininet> est-maria python3 servidor_documentos.py 4 &
+doc_carlos /home/azuresdn/capa_aplicacion/.venv/bin/python servidor_documentos.py 1 &
+doc_ana /home/azuresdn/capa_aplicacion/.venv/bin/python servidor_documentos.py 2 &
+est_luis /home/azuresdn/capa_aplicacion/.venv/bin/python servidor_documentos.py 3 &
+est_maria /home/azuresdn/capa_aplicacion/.venv/bin/python servidor_documentos.py 4 &
 ```
 
 ## Pruebas funcionales
 
 ```
-mininet> est-luis curl -s --max-time 3 http://10.0.1.11:8301/   # 200 (permiso 502)
-mininet> est-luis curl -s --max-time 3 http://10.0.2.11:8302/   # sin salida: bloqueado
-mininet> est-maria curl -s --max-time 3 http://10.0.1.11:8301/  # 200 (permiso 503)
-mininet> est-pedro curl -s --max-time 3 http://10.0.2.11:8302/  # 200 (permiso 505)
-mininet> est-lucia curl -s --max-time 3 http://10.0.1.11:8301/  # sin salida: bloqueado
-mininet> doc-carlos curl -s --max-time 3 http://10.0.1.12:8303/ # 200 (permiso 507)
-mininet> invitado-1 curl -s --max-time 3 http://10.0.1.11:8301/ # sin salida: bloqueado
+est_luis curl -s --max-time 3 http://10.0.1.11:8301/   # 200 (permiso 502)
+est_luis curl -s --max-time 3 http://10.0.2.11:8302/   # sin salida: bloqueado
+est_maria curl -s --max-time 3 http://10.0.1.11:8301/  # 200 (permiso 503)
+est_pedro curl -s --max-time 3 http://10.0.2.11:8302/  # 200 (permiso 505)
+est_lucia curl -s --max-time 3 http://10.0.1.11:8301/  # sin salida: bloqueado
+doc_carlos curl -s --max-time 3 http://10.0.1.12:8303/ # 200 (permiso 507)
+invitado_1 curl -s --max-time 3 http://10.0.1.11:8301/ # sin salida: bloqueado
 ```
 
 Evidencia de las reglas instaladas:
