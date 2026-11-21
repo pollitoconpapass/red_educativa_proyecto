@@ -80,11 +80,11 @@ Y abrir el puerto 3306 **solo para la IP de la VM de aplicación** (regla de ent
 del NSG de Azure y, si está activo, `ufw`). El usuario `appuser@'%'` ya está en
 `capa_datos/creacion_permisos.sql`.
 
-La topología agrega un NAT Mininet (`red.addNAT()`) para que los hosts emulados
-tengan ruta por defecto y puedan consultar esa BD. Como las sedes usan `/24` y el
-gateway del NAT queda en `10.0.0.0/8`, la ruta se instala con `onlink`.
-El tráfico sale con la IP de la VM de aplicación, la misma que ya usa Ryu, así que
-no hay que cambiar nada más en la VM de datos.
+La topología usa un solo dominio L2 (`10.0.0.0/8`); el tercer octeto identifica
+la sede. Con `/24` por sede haría falta un router entre sedes, que no existe.
+El NAT (`red.addNAT()`) da salida hacia la BD; el tráfico sigue saliendo con la IP
+de la VM de aplicación, la misma que ya usa Ryu, así que no hay que cambiar nada
+más en la VM de datos.
 
 Verificación desde un host: `doc_carlos ip route` debe mostrar
 `default via 10.0.0.11 dev doc_carlos-eth0 ... onlink`.
