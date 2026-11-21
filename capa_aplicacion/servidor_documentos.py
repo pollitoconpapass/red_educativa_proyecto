@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Sirve en este host los documentos que la BD le asigna como autor.
 
-Uso (dentro de Mininet):  doc-carlos python3 servidor_documentos.py 1
+Uso (dentro de Mininet):  doc_carlos python3 servidor_documentos.py 1
 """
 
 import sys

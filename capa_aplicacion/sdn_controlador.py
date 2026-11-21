@@ -5,7 +5,7 @@ Switch L2 aprendido + ACL de documentos calculada desde PERMISO_ACCESO:
 por cada host y cada documento sin permiso en la BD instala un `drop` de
 prioridad 100, por encima del reenvío L2 (prioridad 10).
 
-Arranque:  ryu-manager controlador.py
+Arranque:  ryu-manager sdn_controlador.py
 """
 
 from ryu.base import app_manager
@@ -70,6 +70,9 @@ class EduNet(app_manager.RyuApp):
                 tcp_dst=regla["puerto"],
             )
             self._add_flow(datapath, PRIO_ACL, match, [])
+
+        self.logger.info("Switch 0x%x conectado: %d reglas ACL instaladas",
+                         datapath.id, len(self.reglas))
 
     @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
     def packet_in_handler(self, ev):

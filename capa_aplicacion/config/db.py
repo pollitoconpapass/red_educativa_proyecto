@@ -5,23 +5,38 @@ import pymysql
 from pathlib import Path
 from urllib.parse import urlparse
 
-RAIZ = Path(__file__).resolve().parents[2]  # raíz del proyecto (donde está .env)
+RAIZ = Path(__file__).resolve().parents[1]  # capa_aplicacion/
 CLAVES = ("SERVER_HOST", "PORT", "DATABASE", "USERNAME", "PASSWORD")
+OBLIGATORIAS = ("SERVER_HOST", "USERNAME", "PASSWORD", "DATABASE")
+
+
+def _parsear(archivo):
+    valores = {}
+    for linea in archivo.read_text(encoding="utf-8").splitlines():
+        linea = linea.strip()
+        if "=" in linea and not linea.startswith("#"):
+            clave, valor = linea.split("=", 1)
+            valores[clave.strip()] = valor.strip().strip("\"'")
+    return valores
+
+
+def _leer_env(desde):
+    """Primer `.env` encontrado desde `desde` hacia arriba."""
+    desde = Path(desde).resolve()
+    for carpeta in (desde, *desde.parents):
+        archivo = carpeta / ".env"
+        if archivo.exists():
+            return archivo, _parsear(archivo)
+    return None, {}
+
 
 def configuracion():
-    """Lee .env de la raíz del proyecto; las variables de entorno tienen prioridad.
+    """Config de la BD desde el `.env` más cercano hacia arriba.
 
     Admite `URL=jdbc:mysql://host:puerto/base` o las claves por separado
-    (SERVER_HOST, PORT, DATABASE).
+    (SERVER_HOST, PORT, DATABASE). Las variables de entorno tienen prioridad.
     """
-    valores = {}
-    archivo = RAIZ / ".env"
-    if archivo.exists():
-        for linea in archivo.read_text(encoding="utf-8").splitlines():
-            linea = linea.strip()
-            if "=" in linea and not linea.startswith("#"):
-                clave, valor = linea.split("=", 1)
-                valores[clave.strip()] = valor.strip().strip("\"'")
+    archivo, valores = _leer_env(__file__)
 
     url = valores.get("URL", "").removeprefix("jdbc:")
     if url:
@@ -33,6 +48,15 @@ def configuracion():
     for clave in CLAVES:
         if os.environ.get(clave):
             valores[clave] = os.environ[clave]
+
+    faltan = [clave for clave in OBLIGATORIAS if not valores.get(clave)]
+    if faltan:
+        raise RuntimeError(
+            f"Faltan {', '.join(faltan)} para conectar a la BD. "
+            f".env usado: {archivo or 'ninguno encontrado desde ' + str(RAIZ)}. "
+            f"Claves leidas: {sorted(valores)}. "
+            "Formato: URL=jdbc:mysql://host:3306/red_educativa + USERNAME + PASSWORD."
+        )
     return valores
 
 
