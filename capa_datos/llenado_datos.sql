@@ -13,6 +13,9 @@ START TRANSACTION;
 -- =====================================================
 -- 1. USUARIO
 -- 2 DOCENTES + 4 ESTUDIANTES
+-- Contraseña de todos los usuarios demo: Demo1234!
+-- Los hashes de este archivo son de prueba: ejecuta
+-- capa_datos/migracion_api.sql para tener bcrypt reales.
 -- =====================================================
 
 INSERT INTO USUARIO

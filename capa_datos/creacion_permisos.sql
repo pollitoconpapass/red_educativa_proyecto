@@ -3,7 +3,7 @@
 -- 1. CREACIÓN DE USUARIO
 -- ============================================
 CREATE USER 'appuser'@'%'
-IDENTIFIED BY 'TuPasswordSegura';
+IDENTIFIED BY 'StrongPassword123!';
 
 -- ============================================
 -- 2. PERMISOS DE ACCESO

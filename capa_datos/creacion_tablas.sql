@@ -123,7 +123,10 @@ CREATE TABLE IF NOT EXISTS PERMISO_ACCESO (
         ON UPDATE CASCADE,
 
     INDEX idx_permiso_usuario (id_usuario),
-    INDEX idx_permiso_documento (id_documento)
+    INDEX idx_permiso_documento (id_documento),
+
+    CONSTRAINT uq_permiso_usuario_documento
+        UNIQUE (id_usuario, id_documento)
 ) ENGINE=InnoDB;
 
 
@@ -158,12 +161,38 @@ CREATE TABLE IF NOT EXISTS ENTREGA (
 
     INDEX idx_entrega_actividad (id_actividad),
     INDEX idx_entrega_estudiante (id_estudiante),
-    INDEX idx_entrega_documento (id_documento)
+    INDEX idx_entrega_documento (id_documento),
+
+    CONSTRAINT uq_entrega_actividad_estudiante
+        UNIQUE (id_actividad, id_estudiante)
 ) ENGINE=InnoDB;
 
 
 -- ============================================
--- 9. VERIFICACIÓN DE TABLAS
+-- 9. TABLA: AUDITORIA
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS AUDITORIA (
+    id_auditoria BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    id_usuario INT UNSIGNED NOT NULL,
+    accion VARCHAR(50) NOT NULL,
+    entidad VARCHAR(30) NOT NULL,
+    id_entidad INT UNSIGNED,
+    fecha DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_auditoria_usuario
+        FOREIGN KEY (id_usuario)
+        REFERENCES USUARIO(id_usuario)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+
+    INDEX idx_auditoria_usuario_fecha (id_usuario, fecha),
+    INDEX idx_auditoria_fecha (fecha)
+) ENGINE=InnoDB;
+
+
+-- ============================================
+-- 10. VERIFICACIÓN DE TABLAS
 -- ============================================
 
 SHOW TABLES;
