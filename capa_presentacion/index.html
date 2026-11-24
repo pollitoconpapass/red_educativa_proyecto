@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>EduNet | Portal académico</title>
+    <meta
+      name="description"
+      content="Portal académico para consultar actividades, subir entregas y publicar material del curso."
+    />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230f766e'/%3E%3Ctext x='16' y='22' font-family='system-ui,sans-serif' font-size='17' font-weight='700' text-anchor='middle' fill='white'%3EE%3C/text%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="css/tokens.css" />
+    <link rel="stylesheet" href="css/layout.css" />
+    <link rel="stylesheet" href="css/components.css" />
+  </head>
+  <body>
+    <a class="salto" href="#vista">Saltar al contenido</a>
+    <div id="app"></div>
+    <div id="modal-root"></div>
+    <div id="toast-region" class="toast-region" role="status" aria-live="polite"></div>
+    <noscript>
+      <p class="sin-js">Este portal necesita JavaScript activado para funcionar.</p>
+    </noscript>
+
+    <script src="js/config.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/estudiante.js"></script>
+    <script src="js/docente.js"></script>
+    <script src="js/app.js"></script>
+  </body>
+</html>
