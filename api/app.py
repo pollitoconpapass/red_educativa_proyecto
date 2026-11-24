@@ -1,8 +1,18 @@
 from config import db
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from routers import auditoria, auth, docente, documentos, estudiante
 
 app = FastAPI(title="EduNet API", version="1.0.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["Content-Disposition"],
+)
+
 app.include_router(auth.router)
 app.include_router(estudiante.router)
 app.include_router(docente.router)
