@@ -8,8 +8,9 @@ calculada desde `DOCUMENTO` y `PERMISO_ACCESO` de la BD `red_educativa`.
 - Cada documento `id_documento = N` se sirve en `http://<ip_del_autor>:8000+N/`.
   El puerto identifica al documento, por eso OpenFlow puede autorizarlo por separado.
 - Al conectar un switch, el controlador lee la BD y, por cada host y cada documento
-  **sin fila en `PERMISO_ACCESO`**, instala un `drop` de prioridad 100. El reenvío
-  normal (switch L2 aprendido) queda en prioridad 10.
+  **sin fila en `PERMISO_ACCESO` y que no sea de su autor**, instala un `drop` de
+  prioridad 100. El autor siempre puede leer su documento, igual que en la API.
+  El reenvío normal (switch L2 aprendido) queda en prioridad 10.
 - Los hosts `invitado-*` no tienen `id_usuario`, así que no tienen permisos.
 
 | Switch | Sede        | Hosts                        |
