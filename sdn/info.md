@@ -25,7 +25,7 @@ El detalle de IP/MAC/`id_usuario` está en `edunet/config.py`.
 ## Estructura
 
 ```
-capa_aplicacion/
+sdn/
 ├── sdn_controlador.py      # app Ryu (se ejecuta con ryu-manager)
 ├── topologia.py            # topología Mininet
 ├── servidor_documentos.py  # servidor HTTP de documentos de un autor
@@ -38,10 +38,13 @@ capa_aplicacion/
     └── test_politica.py
 ```
 
-Los tres scripts se ejecutan desde `capa_aplicacion/`, así se importa el paquete
+Los tres scripts se ejecutan desde `sdn/`, así se importa el paquete
 `edunet` sin tocar `sys.path`.
 
 ## Instalación (VM Ubuntu con Mininet)
+
+> [!NOTE]
+> Dentro de la VM, el directorio se llama `/capa_aplicacion`
 
 ```bash
 sudo apt install -y mininet python3-pip

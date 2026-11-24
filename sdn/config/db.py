@@ -5,7 +5,7 @@ import pymysql
 from pathlib import Path
 from urllib.parse import urlparse
 
-RAIZ = Path(__file__).resolve().parents[1]  # capa_aplicacion/
+RAIZ = Path(__file__).resolve().parents[1]  # sdn/ o capa_aplicacion/ (solo en la VM)
 CLAVES = ("SERVER_HOST", "PORT", "DATABASE", "USERNAME", "PASSWORD")
 OBLIGATORIAS = ("SERVER_HOST", "USERNAME", "PASSWORD", "DATABASE")
 

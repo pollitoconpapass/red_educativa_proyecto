@@ -7,7 +7,7 @@ migración y despliegue, ver [`api/info.md`](../api/info.md).
 
 La API es un proceso independiente de la capa SDN (Ryu + Mininet). Solo comparte
 la base de datos `red_educativa` con ella; no importa código de
-`capa_aplicacion/`.
+`sdn/`.
 
 La base de datos vive en **otra VPS** (`4.149.122.251`). La API se conecta
 remotamente mediante la URL:
