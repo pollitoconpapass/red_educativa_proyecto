@@ -58,7 +58,9 @@ Comprobación de BD: `http://localhost:8080/health`
 | POST   | `/docente/material`                    | docente (multipart, campo `archivo`)    |
 | GET    | `/documentos/{id}/descarga`            | autor o usuario con permiso             |
 | GET    | `/auditoria`                           | docente                                 |
-| GET    | `/salud`                               | público                                 |
+| GET    | `/health`                              | público                                 |
+
+Diseño completo, diagramas y reglas de negocio: [`docs/diseno-api.md`](../docs/diseno-api.md).
 
 ## Almacenamiento
 
