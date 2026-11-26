@@ -13,6 +13,23 @@ calculada desde `DOCUMENTO` y `PERMISO_ACCESO` de la BD `red_educativa`.
   El reenvío normal (switch L2 aprendido) queda en prioridad 10.
 - Los hosts `invitado-*` no tienen `id_usuario`, así que no tienen permisos.
 
+```mermaid
+flowchart LR
+    BD[("BD<br/>DOCUMENTO<br/>PERMISO_ACCESO")]
+    CFG["config.py<br/>MAC, IP, id_usuario"]
+    POL["politica.py<br/>¿es autor o tiene permiso?"]
+    RYU["Ryu<br/>instala las reglas"]
+    SW["Switches<br/>drop en prioridad 100"]
+    HOST["Host pide un documento<br/>responde o se bloquea"]
+
+    BD --> POL
+    CFG --> POL
+    POL --> RYU --> SW --> HOST
+```
+
+La BD aporta **qué documentos hay y quién tiene permiso**; `config.py` aporta
+**quién es cada host** (MAC/IP/`id_usuario`); `politica.py` junta ambos y decide.
+
 | Switch | Sede        | Hosts                        |
 | ------ | ----------- | ---------------------------- |
 | s1     | Lima        | doc_carlos (1), est_luis (3) |
