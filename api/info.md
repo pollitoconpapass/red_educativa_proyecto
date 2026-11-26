@@ -24,6 +24,21 @@ Las instalaciones nuevas pueden usar `creacion_tablas.sql` + `llenado_datos.sql`
 
 - `migracion_api.sql`.
 
+### Archivos dentro de la base de datos
+
+Los binarios viven en `DOCUMENTO_CONTENIDO`. Para una base que ya tiene
+documentos, ejecuta `capa_datos/migracion_archivos_bd.sql` (fase A) y después,
+desde la VPS de aplicación, sube los archivos del disco:
+
+```bash
+cd api && python3 migrar_archivos.py
+```
+
+El script imprime la BD destino, lo migrado, las filas sin archivo en disco
+(documentos demo) y los archivos huérfanos. Es idempotente. Cuando el código
+nuevo esté desplegado y las descargas funcionen, ejecuta la fase B del mismo
+script SQL para borrar `clave_objeto_OCI`.
+
 ## 2. Instalación y arranque
 
 Desde la raíz del repositorio:
@@ -64,9 +79,13 @@ Diseño completo, diagramas y reglas de negocio: [`docs/diseno-api.md`](../docs/
 
 ## Almacenamiento
 
-Los archivos se guardan en `api/almacenamiento/` y `clave_objeto_OCI` contiene la
-clave relativa. Para usar Azure Blob Storage solo se cambia
-`api/storage/archivos.py`; el esquema y los routers no cambian.
+El contenido de cada archivo se guarda en la tabla `DOCUMENTO_CONTENIDO`
+(`MEDIUMBLOB`, una fila por documento, en la VPS de datos). `DOCUMENTO` conserva
+solo los metadatos: nombre original, tamaño y fecha. Las subidas se validan en
+`api/storage/archivos.py` (máx. 10 MB) y la descarga se sirve desde memoria.
+
+MySQL debe tener `max_allowed_packet` en al menos 64 MB; nginx,
+`client_max_body_size 10m` o mayor.
 
 ## Prueba unitaria
 

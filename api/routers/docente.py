@@ -95,37 +95,37 @@ def material(usuario=Depends(solo_docente)):
 @router.post("/material", response_model=MaterialOut, status_code=201)
 def subir_material(archivo: UploadFile = File(...), usuario=Depends(solo_docente)):
     try:
-        clave, tamano = archivos.guardar(archivo)
+        contenido = archivos.leer(archivo)
     except ValueError as error:
         raise HTTPException(400, str(error))
     nombre = (archivo.filename or "material")[:255]
+    tamano = len(contenido)
 
-    try:
-        with db.transaccion() as cursor:
-            cursor.execute(
-                """INSERT INTO DOCUMENTO
-                       (id_usuario_autor, nombre_archivo, clave_objeto_OCI, tamano_bytes)
-                   VALUES (%s, %s, %s, %s)""",
-                (usuario["id_usuario"], nombre, clave, tamano),
-            )
-            id_documento = cursor.lastrowid
-            # Todos los estudiantes pueden leer el material (no hay matrícula).
-            cursor.execute(
-                """INSERT IGNORE INTO PERMISO_ACCESO (id_usuario, id_documento, tipo_permiso)
-                   SELECT id_usuario, %s, 'LECTURA' FROM USUARIO WHERE rol = 'ESTUDIANTE'""",
-                (id_documento,),
-            )
-            db.auditar(
-                cursor, usuario["id_usuario"], "MATERIAL_SUBIDO", "DOCUMENTO", id_documento
-            )
-            cursor.execute(
-                "SELECT fecha_publicacion FROM DOCUMENTO WHERE id_documento = %s",
-                (id_documento,),
-            )
-            fecha_publicacion = cursor.fetchone()["fecha_publicacion"]
-    except Exception:
-        archivos.borrar(clave)
-        raise
+    with db.transaccion() as cursor:
+        cursor.execute(
+            """INSERT INTO DOCUMENTO (id_usuario_autor, nombre_archivo, tamano_bytes)
+               VALUES (%s, %s, %s)""",
+            (usuario["id_usuario"], nombre, tamano),
+        )
+        id_documento = cursor.lastrowid
+        cursor.execute(
+            "INSERT INTO DOCUMENTO_CONTENIDO (id_documento, contenido) VALUES (%s, %s)",
+            (id_documento, contenido),
+        )
+        # Todos los estudiantes pueden leer el material (no hay matrícula).
+        cursor.execute(
+            """INSERT IGNORE INTO PERMISO_ACCESO (id_usuario, id_documento, tipo_permiso)
+               SELECT id_usuario, %s, 'LECTURA' FROM USUARIO WHERE rol = 'ESTUDIANTE'""",
+            (id_documento,),
+        )
+        db.auditar(
+            cursor, usuario["id_usuario"], "MATERIAL_SUBIDO", "DOCUMENTO", id_documento
+        )
+        cursor.execute(
+            "SELECT fecha_publicacion FROM DOCUMENTO WHERE id_documento = %s",
+            (id_documento,),
+        )
+        fecha_publicacion = cursor.fetchone()["fecha_publicacion"]
 
     return MaterialOut(
         id_documento=id_documento,

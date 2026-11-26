@@ -41,11 +41,10 @@ flowchart LR
     end
 
     subgraph DATOS["VPS de datos · MySQL 4.149.122.251"]
-        M[(red_educativa)]
+        M[(red_educativa<br/>DOCUMENTO · DOCUMENTO_CONTENIDO)]
     end
 
     D -->|:3306| M
-    S --> L[(Disco local<br/>api/almacenamiento/)]
     A -.->|JWT_SECRET| E[api/.env]
     D -.->|URL · USERNAME · PASSWORD| E
 ```
@@ -70,7 +69,7 @@ desde Internet).
 | `api/auth/permisos.py`    | Regla de descarga: autor o permiso explícito.                                                             |
 | `api/models/schemas.py`   | Modelos Pydantic de entrada y salida.                                                                     |
 | `api/routers/`            | Un router por área funcional.                                                                             |
-| `api/storage/archivos.py` | Guardar, ubicar y borrar archivos en disco (máx. 10 MB).                                                  |
+| `api/storage/archivos.py` | Valida el tamaño del archivo subido y devuelve sus bytes (máx. 10 MB).                                   |
 
 ## 3. Autenticación y autorización
 
@@ -131,7 +130,7 @@ Documentación interactiva generada por FastAPI: `/docs` (Swagger) y
 | 400    | Archivo vacío o mayor a 10 MB.                                                           |
 | 401    | Sin token, token inválido/vencido o credenciales incorrectas.                            |
 | 403    | Rol incorrecto, actividad de otro docente, sin permiso de descarga o usuario sin perfil. |
-| 404    | Actividad/documento inexistente o archivo ausente en disco.                              |
+| 404    | Actividad/documento inexistente o documento sin archivo cargado.                          |
 | 409    | Correo ya registrado.                                                                    |
 | 422    | Datos inválidos (Pydantic) o falta `codigo_universitario`.                               |
 | 503    | `/health` sin conexión a MySQL.                                                          |
@@ -142,31 +141,31 @@ Documentación interactiva generada por FastAPI: `/docs` (Swagger) y
 sequenceDiagram
     participant E as Estudiante
     participant API as FastAPI
-    participant FS as almacenamiento/
     participant DB as MySQL
 
     E->>API: POST /estudiante/actividades/7/entrega (archivo)
     API->>DB: ¿existe la actividad? → id_usuario del docente
-    API->>FS: guardar archivo (uuid + extensión)
     API->>DB: BEGIN
     API->>DB: ¿entrega previa? FOR UPDATE
     alt Primera entrega
-        API->>DB: INSERT DOCUMENTO + INSERT ENTREGA
+        API->>DB: INSERT DOCUMENTO + INSERT DOCUMENTO_CONTENIDO
+        API->>DB: INSERT ENTREGA
         API->>DB: INSERT PERMISO_ACCESO (docente, LECTURA)
         API->>DB: INSERT AUDITORIA (ENTREGA_SUBIDA)
     else Reemplazo
-        API->>DB: UPDATE DOCUMENTO + UPDATE ENTREGA
+        API->>DB: UPDATE DOCUMENTO + REPLACE DOCUMENTO_CONTENIDO
+        API->>DB: UPDATE ENTREGA
         API->>DB: INSERT/UPDATE PERMISO_ACCESO
         API->>DB: INSERT AUDITORIA (ENTREGA_REEMPLAZADA)
     end
     API->>DB: COMMIT
-    API->>FS: borrar archivo anterior (si hubo reemplazo)
     API-->>E: 201 {id_entrega, id_documento, reemplazada}
 ```
 
-Si la transacción falla, se borra el archivo recién guardado para no dejar
-huérfanos. La restricción `UNIQUE (id_actividad, id_estudiante)` garantiza una
-sola entrega por actividad y estudiante.
+El binario se inserta en la misma transacción que los metadatos: si algo falla,
+el rollback deshace todo y no quedan archivos huérfanos. La restricción
+`UNIQUE (id_actividad, id_estudiante)` garantiza una sola entrega por actividad
+y estudiante.
 
 ## 6. Reglas de negocio
 
@@ -184,15 +183,16 @@ sola entrega por actividad y estudiante.
 
 ## 7. Almacenamiento de archivos
 
-- Ruta base: `api/almacenamiento/` (`BASE` en `api/storage/archivos.py`).
-- `clave_objeto_OCI` guarda la clave relativa, p. ej.
-  `documentos/<uuid>.pdf`; la API resuelve la ruta al descargar.
-- Nombre original, tamaño y fecha viven en `DOCUMENTO`; el nombre en disco es
-  un UUID, lo que evita colisiones y rutas predecibles.
-- Límite de 10 MB por archivo, validado en la API. nginx debe usar
-  `client_max_body_size 10m` o mayor.
-- Migrar a Azure Blob Storage solo requiere cambiar `api/storage/archivos.py`;
-  routers y esquema no cambian.
+- El binario vive en `DOCUMENTO_CONTENIDO` (`MEDIUMBLOB`, PK/FK a `DOCUMENTO`
+  con `ON DELETE CASCADE`), en la VPS de datos.
+- `DOCUMENTO` guarda solo metadatos: nombre original, tamaño y fecha. Los
+  listados (`/docente/material`, `/estudiante/entregas`) nunca leen el blob.
+- La API valida el tope de 10 MB en `api/storage/archivos.py` antes de insertar.
+- MySQL necesita `max_allowed_packet >= 64M`, porque PyMySQL escapa el binario
+  y 10 MB pueden viajar como 20-40 MB de paquete.
+- Borrar un documento borra su contenido por la FK; ya no hay archivos que
+  limpiar ni claves que resolver.
+- nginx debe usar `client_max_body_size 10m` o mayor.
 
 ## 8. Auditoría
 
