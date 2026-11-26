@@ -73,78 +73,76 @@ def entregar(
     id_usuario_docente = actividad[0]["id_usuario_docente"]
 
     try:
-        clave, tamano = archivos.guardar(archivo)
+        contenido = archivos.leer(archivo)
     except ValueError as error:
         raise HTTPException(400, str(error))
     nombre = (archivo.filename or f"entrega_{id_actividad}")[:255]
-    clave_vieja = None
+    tamano = len(contenido)
 
-    try:
-        with db.transaccion() as cursor:
+    with db.transaccion() as cursor:
+        cursor.execute(
+            """SELECT id_entrega, id_documento
+               FROM ENTREGA
+               WHERE id_actividad = %s AND id_estudiante = %s
+               FOR UPDATE""",
+            (id_actividad, id_estudiante),
+        )
+        previa = cursor.fetchone()
+
+        if previa:
+            id_entrega = previa["id_entrega"]
+            id_documento = previa["id_documento"]
             cursor.execute(
-                """SELECT en.id_entrega, en.id_documento, doc.clave_objeto_OCI
-                   FROM ENTREGA en
-                   JOIN DOCUMENTO doc ON doc.id_documento = en.id_documento
-                   WHERE en.id_actividad = %s AND en.id_estudiante = %s
-                   FOR UPDATE""",
-                (id_actividad, id_estudiante),
+                """UPDATE DOCUMENTO
+                   SET nombre_archivo = %s, tamano_bytes = %s, fecha_publicacion = NOW()
+                   WHERE id_documento = %s""",
+                (nombre, tamano, id_documento),
             )
-            previa = cursor.fetchone()
-
-            if previa:
-                id_entrega = previa["id_entrega"]
-                id_documento = previa["id_documento"]
-                clave_vieja = previa["clave_objeto_OCI"]
-                cursor.execute(
-                    """UPDATE DOCUMENTO
-                       SET nombre_archivo = %s, clave_objeto_OCI = %s,
-                           tamano_bytes = %s, fecha_publicacion = NOW()
-                       WHERE id_documento = %s""",
-                    (nombre, clave, tamano, id_documento),
-                )
-                cursor.execute(
-                    "UPDATE ENTREGA SET fecha_entrega = NOW() WHERE id_entrega = %s",
-                    (id_entrega,),
-                )
-                cursor.execute(
-                    """INSERT INTO PERMISO_ACCESO (id_usuario, id_documento, tipo_permiso)
-                       VALUES (%s, %s, 'LECTURA')
-                       ON DUPLICATE KEY UPDATE tipo_permiso = 'LECTURA'""",
-                    (id_usuario_docente, id_documento),
-                )
-                db.auditar(
-                    cursor, usuario["id_usuario"], "ENTREGA_REEMPLAZADA", "ENTREGA", id_entrega
-                )
-                reemplazada = True
-            else:
-                cursor.execute(
-                    """INSERT INTO DOCUMENTO
-                           (id_usuario_autor, nombre_archivo, clave_objeto_OCI, tamano_bytes)
-                       VALUES (%s, %s, %s, %s)""",
-                    (usuario["id_usuario"], nombre, clave, tamano),
-                )
-                id_documento = cursor.lastrowid
-                cursor.execute(
-                    """INSERT INTO ENTREGA (id_actividad, id_estudiante, id_documento)
-                       VALUES (%s, %s, %s)""",
-                    (id_actividad, id_estudiante, id_documento),
-                )
-                id_entrega = cursor.lastrowid
-                cursor.execute(
-                    """INSERT INTO PERMISO_ACCESO (id_usuario, id_documento, tipo_permiso)
-                       VALUES (%s, %s, 'LECTURA')""",
-                    (id_usuario_docente, id_documento),
-                )
-                db.auditar(
-                    cursor, usuario["id_usuario"], "ENTREGA_SUBIDA", "ENTREGA", id_entrega
-                )
-                reemplazada = False
-    except Exception:
-        archivos.borrar(clave)
-        raise
-
-    if clave_vieja:
-        archivos.borrar(clave_vieja)
+            # REPLACE cubre también documentos que nunca llegaron a tener contenido.
+            cursor.execute(
+                "REPLACE INTO DOCUMENTO_CONTENIDO (id_documento, contenido) VALUES (%s, %s)",
+                (id_documento, contenido),
+            )
+            cursor.execute(
+                "UPDATE ENTREGA SET fecha_entrega = NOW() WHERE id_entrega = %s",
+                (id_entrega,),
+            )
+            cursor.execute(
+                """INSERT INTO PERMISO_ACCESO (id_usuario, id_documento, tipo_permiso)
+                   VALUES (%s, %s, 'LECTURA')
+                   ON DUPLICATE KEY UPDATE tipo_permiso = 'LECTURA'""",
+                (id_usuario_docente, id_documento),
+            )
+            db.auditar(
+                cursor, usuario["id_usuario"], "ENTREGA_REEMPLAZADA", "ENTREGA", id_entrega
+            )
+            reemplazada = True
+        else:
+            cursor.execute(
+                """INSERT INTO DOCUMENTO (id_usuario_autor, nombre_archivo, tamano_bytes)
+                   VALUES (%s, %s, %s)""",
+                (usuario["id_usuario"], nombre, tamano),
+            )
+            id_documento = cursor.lastrowid
+            cursor.execute(
+                "INSERT INTO DOCUMENTO_CONTENIDO (id_documento, contenido) VALUES (%s, %s)",
+                (id_documento, contenido),
+            )
+            cursor.execute(
+                """INSERT INTO ENTREGA (id_actividad, id_estudiante, id_documento)
+                   VALUES (%s, %s, %s)""",
+                (id_actividad, id_estudiante, id_documento),
+            )
+            id_entrega = cursor.lastrowid
+            cursor.execute(
+                """INSERT INTO PERMISO_ACCESO (id_usuario, id_documento, tipo_permiso)
+                   VALUES (%s, %s, 'LECTURA')""",
+                (id_usuario_docente, id_documento),
+            )
+            db.auditar(
+                cursor, usuario["id_usuario"], "ENTREGA_SUBIDA", "ENTREGA", id_entrega
+            )
+            reemplazada = False
 
     return EntregaResultado(
         id_entrega=id_entrega, id_documento=id_documento, reemplazada=reemplazada

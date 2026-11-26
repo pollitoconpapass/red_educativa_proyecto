@@ -65,7 +65,6 @@ CREATE TABLE IF NOT EXISTS DOCUMENTO (
     id_documento INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     id_usuario_autor INT UNSIGNED NOT NULL,
     nombre_archivo VARCHAR(255) NOT NULL,
-    clave_objeto_OCI VARCHAR(500) NOT NULL,
     tamano_bytes BIGINT UNSIGNED NOT NULL,
     fecha_publicacion DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -81,7 +80,25 @@ CREATE TABLE IF NOT EXISTS DOCUMENTO (
 
 
 -- ============================================
--- 6. TABLA: ACTIVIDAD
+-- 6. TABLA: DOCUMENTO_CONTENIDO
+-- El binario del documento, en una tabla aparte
+-- para no arrastrarlo en los listados.
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS DOCUMENTO_CONTENIDO (
+    id_documento INT UNSIGNED PRIMARY KEY,
+    contenido MEDIUMBLOB NOT NULL,
+
+    CONSTRAINT fk_contenido_documento
+        FOREIGN KEY (id_documento)
+        REFERENCES DOCUMENTO(id_documento)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+
+-- ============================================
+-- 7. TABLA: ACTIVIDAD
 -- ============================================
 
 CREATE TABLE IF NOT EXISTS ACTIVIDAD (
@@ -101,7 +118,7 @@ CREATE TABLE IF NOT EXISTS ACTIVIDAD (
 
 
 -- ============================================
--- 7. TABLA: PERMISO_ACCESO
+-- 8. TABLA: PERMISO_ACCESO
 -- ============================================
 
 CREATE TABLE IF NOT EXISTS PERMISO_ACCESO (
@@ -131,7 +148,7 @@ CREATE TABLE IF NOT EXISTS PERMISO_ACCESO (
 
 
 -- ============================================
--- 8. TABLA: ENTREGA
+-- 9. TABLA: ENTREGA
 -- ============================================
 
 CREATE TABLE IF NOT EXISTS ENTREGA (
@@ -169,7 +186,7 @@ CREATE TABLE IF NOT EXISTS ENTREGA (
 
 
 -- ============================================
--- 9. TABLA: AUDITORIA
+-- 10. TABLA: AUDITORIA
 -- ============================================
 
 CREATE TABLE IF NOT EXISTS AUDITORIA (
@@ -192,7 +209,7 @@ CREATE TABLE IF NOT EXISTS AUDITORIA (
 
 
 -- ============================================
--- 10. VERIFICACIÓN DE TABLAS
+-- 11. VERIFICACIÓN DE TABLAS
 -- ============================================
 
 SHOW TABLES;

@@ -69,41 +69,36 @@ VALUES
 -- Documentos publicados por docentes y entregados
 -- por estudiantes.
 --
--- Las claves OCI son identificadores ficticios.
--- No corresponden a objetos reales de Oracle Cloud.
+-- El binario no se carga aquí: estas filas no tienen
+-- fila en DOCUMENTO_CONTENIDO, así que su descarga
+-- responde 404 hasta que se suba un archivo real.
 -- =====================================================
 
 INSERT INTO DOCUMENTO
 (id_documento, id_usuario_autor, nombre_archivo,
- clave_objeto_OCI, tamano_bytes, fecha_publicacion)
+ tamano_bytes, fecha_publicacion)
 VALUES
 
 -- Material publicado por docentes
 
 (301, 1, 'Introduccion_TCP_IP.pdf',
- 'red-educativa/documentos/introduccion_tcp_ip.pdf',
  2048000, '2026-10-01 09:00:00'),
 
 (302, 2, 'Modelo_OSI.pdf',
- 'red-educativa/documentos/modelo_osi.pdf',
  1536000, '2026-10-03 10:30:00'),
 
 -- Documentos entregados por estudiantes
 
 (303, 3, 'Practica_TCP_IP_Luis.pdf',
- 'red-educativa/entregas/luis/practica_tcp_ip.pdf',
  1024000, '2026-11-05 14:20:00'),
 
 (304, 4, 'Practica_TCP_IP_Maria.pdf',
- 'red-educativa/entregas/maria/practica_tcp_ip.pdf',
  1280000, '2026-11-05 15:10:00'),
 
 (305, 5, 'Practica_OSI_Pedro.pdf',
- 'red-educativa/entregas/pedro/practica_osi.pdf',
  980000, '2026-11-06 11:00:00'),
 
 (306, 6, 'Practica_OSI_Lucia.pdf',
- 'red-educativa/entregas/lucia/practica_osi.pdf',
  1150000, '2026-11-06 12:30:00');
 
 
